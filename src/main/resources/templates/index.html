@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <title>My Web Page</title>
+  </head>
+  <body>
+    <h1>Feedback Form</h1>
+    <div id="messageArea"></div>
+
+    <label for="useCase">Use Case:</label><br />
+    <input type="text" id="useCase" name="useCase" /><br /><br />
+
+    <label for="prompts">Prompts:</label><br />
+    <textarea id="prompts" name="prompts"></textarea><br /><br />
+
+    <label for="output">Output (Optional):</label><br />
+    <textarea id="output" name="output"></textarea><br /><br />
+
+    <label for="feedback">Feedback:</label><br />
+    <textarea id="feedback" name="feedback"></textarea><br /><br />
+
+    <button id="submitButton">Submit Feedback</button>
+
+    <script>
+      document
+        .getElementById("submitButton")
+        .addEventListener("click", function () {
+          const useCase = document.getElementById("useCase").value;
+          const prompts = document.getElementById("prompts").value;
+          const output = document.getElementById("output").value;
+          const feedback = document.getElementById("feedback").value;
+
+          fetch("/submit", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              useCase: useCase,
+              prompts: prompts,
+              output: output,
+              feedback: feedback,
+            }),
+          })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error("HTTP error! status: " + response.status);
+              }
+              return response.text();
+            })
+            .then((data) => {
+              document.getElementById("messageArea").textContent =
+                "Server Response: " + data;
+              console.log("Server Response:", data);
+            })
+            .catch((error) => {
+              document.getElementById("messageArea").textContent =
+                "Error: " + error.message;
+              console.error("Error:", error);
+            });
+        });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,294 @@
+// package com.example.demo.controller;
+
+// import org.springframework.web.bind.annotation.PostMapping;
+// import org.springframework.web.bind.annotation.RequestBody;
+// import org.springframework.web.bind.annotation.RestController;
+// import org.springframework.http.ResponseEntity;
+// import org.springframework.http.HttpStatus;
+// import org.springframework.core.io.ClassPathResource;
+// import org.apache.poi.ss.usermodel.*;
+// import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+// import com.opencsv.CSVWriter; // Import CSVWriter from opencsv
+
+// import java.io.File;
+// import java.io.FileInputStream;
+// import java.io.FileOutputStream;
+// import java.io.FileWriter;
+// import java.io.IOException;
+// import java.util.ArrayList;
+// import java.util.List;
+
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
+
+// @RestController
+// public class FileUploadController {
+
+//     private static final Logger logger = LoggerFactory.getLogger(FileUploadController.class);
+
+//     public static class FeedbackData {
+//         private String useCase;
+//         private String prompts;
+//         private String output;
+//         private String feedback;
+
+//         public String getUseCase() { return useCase; }
+//         public void setUseCase(String useCase) { this.useCase = useCase; }
+//         public String getPrompts() { return prompts; }
+//         public void setPrompts(String prompts) { this.prompts = prompts; }
+//         public String getOutput() { return output; }
+//         public void setOutput(String output) { this.output = output; }
+//         public String getFeedback() { return feedback; }
+//         public void setFeedback(String feedback) { this.feedback = feedback; }
+//     }
+
+//     @PostMapping("/submit")
+//     public ResponseEntity<String> handleFileUpload(@RequestBody FeedbackData feedbackData) {
+//         try {
+//             // 1. File Path for Excel and CSV
+//             String excelFilePath = "files/feedback.xlsx";
+//             ClassPathResource excelResource = new ClassPathResource(excelFilePath);
+//             File excelFile = excelResource.getFile();
+//             String csvFilePath = excelFile.getAbsolutePath().replace(".xlsx", ".csv"); // Create CSV path from Excel path
+//             File csvFile = new File(csvFilePath);
+
+//             // Log file paths
+//             logger.info("Excel file absolute path: {}", excelFile.getAbsolutePath());
+//             logger.info("CSV file absolute path: {}", csvFile.getAbsolutePath());
+
+//             // 2. Open Excel Workbook (Read/Write)
+//             FileInputStream fis = new FileInputStream(excelFile);
+//             XSSFWorkbook workbook = new XSSFWorkbook(fis);
+//             fis.close();
+//             Sheet sheet = workbook.getSheetAt(0);
+
+//             // 3. Add "Connected Fields" Header if not exists in the first row, last column
+//             Row headerRow = sheet.getRow(0);
+//             int lastColumnIndex = headerRow != null ? headerRow.getLastCellNum() : 0;
+//             if (headerRow == null) {
+//                 headerRow = sheet.createRow(0);
+//             }
+//             Cell headerCell = headerRow.createCell(lastColumnIndex != -1 ? lastColumnIndex : 0);
+//             headerCell.setCellValue("Connected Fields");
+
+//             // // 4. Iterate through existing rows and populate "Connected Data" column
+//             // int firstDataRowNum = sheet.getFirstRowNum() + 1;
+//             // int lastDataRowNum = sheet.getLastRowNum();
+//             // DataFormatter formatter = new DataFormatter();
+
+//             // for (int rowNum = firstDataRowNum; rowNum <= lastDataRowNum; rowNum++) {
+//             //     Row dataRow = sheet.getRow(rowNum);
+//             //     if (dataRow != null) {
+//             //         String useCase = formatter.formatCellValue(dataRow.getCell(0));
+//             //         String prompts = formatter.formatCellValue(dataRow.getCell(1));
+//             //         String output = formatter.formatCellValue(dataRow.getCell(2));
+//             //         String feedback = formatter.formatCellValue(dataRow.getCell(3));
+
+//             //         String connectedData = String.format(
+//             //                 "Use Case: %s - Prompts: %s - Output: %s - Feedback: %s",
+//             //                 useCase, prompts, output, feedback
+//             //         );
+//             //         Cell connectedDataCell = dataRow.createCell(lastColumnIndex != -1 ? lastColumnIndex : 0);
+//             //         connectedDataCell.setCellValue(connectedData);
+//             //     }
+//             // }
+
+//             // // 5. Insert new feedback row
+//             // int nextRowNumForNewEntry = lastDataRowNum + 1;
+//             // Row newFeedbackRow = sheet.createRow(nextRowNumForNewEntry);
+//             // int cellIndexNewRow = 0;
+//             // newFeedbackRow.createCell(cellIndexNewRow++).setCellValue(feedbackData.getUseCase());
+//             // newFeedbackRow.createCell(cellIndexNewRow++).setCellValue(feedbackData.getPrompts());
+//             // newFeedbackRow.createCell(cellIndexNewRow++).setCellValue(feedbackData.getOutput());
+//             // newFeedbackRow.createCell(cellIndexNewRow++).setCellValue(feedbackData.getFeedback());
+//             // String newConnectedData = String.format(
+//             //         "Use Case: %s - Prompts: %s - Output: %s - Feedback: %s",
+//             //         feedbackData.getUseCase(),
+//             //         feedbackData.getPrompts(),
+//             //         feedbackData.getOutput(),
+//             //         feedbackData.getFeedback()
+//             // );
+//             // newFeedbackRow.createCell(lastColumnIndex != -1 ? lastColumnIndex : 0).setCellValue(newConnectedData);
+
+//             // 6. Write to Excel File
+//             FileOutputStream fosExcel = new FileOutputStream(excelFile);
+//             workbook.write(fosExcel);
+//             fosExcel.close();
+//             workbook.close();
+
+//             // **7. Export to CSV File**
+//             exportToCsv(workbook, csvFile);
+
+
+//             logger.info("Excel file updated and exported to CSV successfully!");
+//             return ResponseEntity.ok("Excel file updated and exported to CSV successfully!");
+
+//         } catch (IOException e) {
+//             logger.error("Error processing files: ", e);
+//             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing files: " + e.getMessage());
+//         }
+//     }
+
+//     private void exportToCsv(Workbook workbook, File csvFile) throws IOException {
+//         try (CSVWriter writer = new CSVWriter(new FileWriter(csvFile))) { // Use try-with-resources for CSVWriter
+//             Sheet sheet = workbook.getSheetAt(0);
+//             DataFormatter formatter = new DataFormatter();
+//             int rowCount = sheet.getPhysicalNumberOfRows();
+
+//             for (int i = 0; i < rowCount; i++) {
+//                 Row row = sheet.getRow(i);
+//                 if (row != null) {
+//                     List<String> csvRowData = new ArrayList<>();
+//                     for (Cell cell : row) {
+//                         csvRowData.add(formatter.formatCellValue(cell));
+//                     }
+//                     writer.writeNext(csvRowData.toArray(new String[0])); // Write row to CSV
+//                 }
+//             }
+//         }
+//         logger.info("Excel data exported to CSV file: {}", csvFile.getAbsolutePath());
+//     }
+// }
+
+
+package com.example.demo.controller;
+
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.core.io.ClassPathResource;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import com.opencsv.CSVWriter;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@RestController
+public class FileUploadController {
+
+    private static final Logger logger = LoggerFactory.getLogger(FileUploadController.class);
+
+    public static class FeedbackData {
+        private String useCase;
+        private String prompts;
+        private String output;
+        private String feedback;
+
+        public String getUseCase() { return useCase; }
+        public void setUseCase(String useCase) { this.useCase = useCase; }
+        public String getPrompts() { return prompts; }
+        public void setPrompts(String prompts) { this.prompts = prompts; }
+        public String getOutput() { return output; }
+        public void setOutput(String output) { this.output = output; }
+        public String getFeedback() { return feedback; }
+        public void setFeedback(String feedback) { this.feedback = feedback; }
+    }
+
+    @PostMapping("/submit")
+    public ResponseEntity<String> handleFileUpload(@RequestBody FeedbackData feedbackData) {
+        try {
+            // 1. File Path for Excel and CSV
+            String excelFilePath = "files/feedback.xlsx";
+            ClassPathResource excelResource = new ClassPathResource(excelFilePath);
+            File excelFile = excelResource.getFile();
+            String csvFilePath = excelFile.getAbsolutePath().replace(".xlsx", ".csv");
+            File csvFile = new File(csvFilePath);
+
+            // Log file paths
+            logger.info("Excel file absolute path: {}", excelFile.getAbsolutePath());
+            logger.info("CSV file absolute path: {}", csvFile.getAbsolutePath());
+
+            // 2. Open Excel Workbook (Read/Write)
+            FileInputStream fis = new FileInputStream(excelFile);
+            XSSFWorkbook workbook = new XSSFWorkbook(fis);
+            fis.close();
+            Sheet sheet = workbook.getSheetAt(0);
+
+            // 3. Add "Connected Fields" Header if not exists in the 5th column (index 4)
+            Row headerRow = sheet.getRow(0);
+            int connectedFieldsColumnIndex = 4; // Fixed column index for "Connected Fields"
+            if (headerRow == null) {
+                headerRow = sheet.createRow(0);
+            }
+            Cell headerCell = headerRow.createCell(connectedFieldsColumnIndex);
+            headerCell.setCellValue("Connected Fields");
+
+            // 4. Removed code for updating existing rows' "Connected Data" column
+
+            // 5. Insert new feedback row (Populate standard columns and set formula for "Connected Data")
+            int lastDataRowNum = sheet.getLastRowNum();
+            int nextRowNumForNewEntry = lastDataRowNum + 1;
+            Row newFeedbackRow = sheet.createRow(nextRowNumForNewEntry);
+            int cellIndexNewRow = 0;
+            newFeedbackRow.createCell(cellIndexNewRow++).setCellValue(feedbackData.getUseCase());
+            newFeedbackRow.createCell(cellIndexNewRow++).setCellValue(feedbackData.getPrompts());
+            newFeedbackRow.createCell(cellIndexNewRow++).setCellValue(feedbackData.getOutput());
+            newFeedbackRow.createCell(cellIndexNewRow++).setCellValue(feedbackData.getFeedback());
+
+            // **Set Excel formula for "Connected Data" column in the new row**
+            Cell connectedDataCell = newFeedbackRow.createCell(connectedFieldsColumnIndex);
+            // Excel formula to concatenate columns A, B, C, and D (adjust column letters if needed)
+            String formula = "CONCATENATE(\"Use Case: \",A" + (nextRowNumForNewEntry + 1) +
+                             ",\" - Prompts: \",B" + (nextRowNumForNewEntry + 1) +
+                             ",\" - Output: \",C" + (nextRowNumForNewEntry + 1) +
+                             ",\" - Feedback: \",D" + (nextRowNumForNewEntry + 1) + ")";
+            connectedDataCell.setCellFormula(formula); // Set the formula
+
+            // 6. Write to Excel File
+            FileOutputStream fosExcel = new FileOutputStream(excelFile);
+            workbook.write(fosExcel);
+            fosExcel.close();
+            workbook.close();
+
+            // 7. Delete existing CSV file if it exists
+            if (csvFile.exists()) {
+                if (csvFile.delete()) {
+                    logger.info("Existing CSV file deleted successfully: {}", csvFile.getAbsolutePath());
+                } else {
+                    logger.warn("Failed to delete existing CSV file: {}", csvFile.getAbsolutePath());
+                }
+            }
+
+            // 8. Export to CSV File
+            exportToCsv(workbook, csvFile);
+
+            logger.info("Excel file updated (header and new row with formula) and exported to CSV successfully!");
+            return ResponseEntity.ok("Excel file updated (header and new row with formula) and exported to CSV successfully!");
+
+        } catch (IOException e) {
+            logger.error("Error processing files: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing files: " + e.getMessage());
+        }
+    }
+
+    private void exportToCsv(Workbook workbook, File csvFile) throws IOException {
+        try (CSVWriter writer = new CSVWriter(new FileWriter(csvFile))) {
+            Sheet sheet = workbook.getSheetAt(0);
+            DataFormatter formatter = new DataFormatter();
+            int rowCount = sheet.getPhysicalNumberOfRows();
+
+            for (int i = 0; i < rowCount; i++) {
+                Row row = sheet.getRow(i);
+                if (row != null) {
+                    List<String> csvRowData = new ArrayList<>();
+                    for (Cell cell : row) {
+                        csvRowData.add(formatter.formatCellValue(cell));
+                    }
+                    writer.writeNext(csvRowData.toArray(new String[0]));
+                }
+            }
+        }
+        logger.info("Excel data exported to CSV file: {}", csvFile.getAbsolutePath());
+    }
+}
